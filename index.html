@@ -42,21 +42,44 @@
         const urlParams = new URLSearchParams(window.location.search);
         const targetShop = urlParams.get('shop') || urlParams.get('machine_id') || "";
 
-        // 頁面加載時自動設定標題提示
-        window.onload = function() {
+        // 💡 頁面載入時，直接獨立去 Supabase 查出對應的 shop_name 顯示在頂部
+        window.onload = async function() {
             const shopTag = document.getElementById("shopTag");
-            if (targetShop) {
-                shopTag.innerText = `📍 當前分店代號: ${targetShop}`;
-            } else {
+            if (!targetShop) {
                 shopTag.innerText = `📍 全店通用查詢`;
+                return;
+            }
+
+            shopTag.innerText = `📍 正在載入店舖名稱...`;
+
+            try {
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/member_clouds?machine_id=eq.${targetShop}&select=shop_name`, {
+                    headers: {
+                        "apikey": SUPABASE_ANON_KEY,
+                        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.length > 0 && data[0].shop_name) {
+                        shopTag.innerText = `📍 ${data[0].shop_name}`;
+                    } else {
+                        shopTag.innerText = `📍 當前分店代號: ${targetShop}`;
+                    }
+                } else {
+                    shopTag.innerText = `📍 當前分店代號: ${targetShop}`;
+                }
+            } catch (err) {
+                shopTag.innerText = `📍 當前分店代號: ${targetShop}`;
             }
         };
 
+        // 點擊查詢會員資料的邏輯
         async function queryMemberData() {
             const phone = document.getElementById("phoneInput").value.trim();
             const resultArea = document.getElementById("resultArea");
             const errorArea = document.getElementById("errorArea");
-            const shopTag = document.getElementById("shopTag");
             
             resultArea.style.display = "none";
             resultArea.innerHTML = "";
@@ -70,7 +93,6 @@
             errorArea.innerText = "正在查詢中...";
 
             try {
-                // 直接拉取整張表的數據
                 const res = await fetch(`${SUPABASE_URL}/rest/v1/member_clouds?select=machine_id,shop_name,phone,member_detailed_data`, {
                     headers: {
                         "apikey": SUPABASE_ANON_KEY,
@@ -82,25 +104,17 @@
 
                 const rows = await res.json();
                 let foundMember = null;
-                let shopName = "";
+                let shopName = "分店";
 
-                // 尋找匹配的分店與會員
                 for (let row of rows) {
                     const matchShop = !targetShop || row.machine_id === targetShop || row.shop_name === targetShop;
                     
-                    if (matchShop) {
-                        // 如果剛好匹配到該分店，順便把資料庫的 shop_name 拿出來顯示在頂部
-                        if (row.shop_name) {
-                            shopName = row.shop_name;
-                            shopTag.innerText = `📍 ${shopName}`;
-                        }
-
-                        if (row.member_detailed_data && Array.isArray(row.member_detailed_data)) {
-                            const match = row.member_detailed_data.find(m => m.phone === phone);
-                            if (match) {
-                                foundMember = match;
-                                break;
-                            }
+                    if (matchShop && row.member_detailed_data && Array.isArray(row.member_detailed_data)) {
+                        const match = row.member_detailed_data.find(m => m.phone === phone);
+                        if (match) {
+                            foundMember = match;
+                            shopName = row.shop_name || "分店";
+                            break;
                         }
                     }
                 }
@@ -129,7 +143,7 @@
                 resultArea.style.display = "block";
                 resultArea.innerHTML = `
                     <h3 style="margin-top:0; color:#1f2937; text-align:center;">👤 ${foundMember.name || '尊貴會員'}</h3>
-                    <div class="info-row"><span>分店名稱：</span><strong>${shopName || targetShop || '總店'}</strong></div>
+                    <div class="info-row"><span>分店名稱：</span><strong>${shopName}</strong></div>
                     <div class="info-row"><span>帳戶餘額：</span><strong style="color: #059669; font-size: 18px;">¥${foundMember.balance || 0}</strong></div>
                     <div class="info-row"><span>會員等級：</span><span>${foundMember.level || '普通會員'}</span></div>
                     <hr style="border:0; border-top:1px solid #e5e7eb; margin: 15px 0;">
