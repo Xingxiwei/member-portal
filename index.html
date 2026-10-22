@@ -23,7 +23,7 @@
 <body>
     <div class="container">
         <h2>🏷️ 會員自助查詢</h2>
-        <div id="shopTag" class="shop-tag">📍 正在連接資料庫讀取分店名...</div>
+        <div id="shopTag" class="shop-tag">📍 正在透過 ID 讀取店舖名稱...</div>
 
         <div class="form-group">
             <label for="phoneInput">請輸入您的手機號碼：</label>
@@ -39,12 +39,13 @@
         const SUPABASE_URL = "https://owcguwdxmovpatykihny.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_f2V-7tru25_ZKjjq1KE09A_p_CYvKda"; 
 
+        // 1. 捉取網址嘅 machine_id
         const urlParams = new URLSearchParams(window.location.search);
         const targetMachineId = urlParams.get('machine_id') || urlParams.get('shop') || "";
 
-        let globalShopName = "";
+        let currentShopName = "";
 
-        // 💡 頁面一載入，就直接動態從 Supabase 讀取該 machine_id 對應嘅 shop_name
+        // 2. 頁面一開，直接用 machine_id 去 Supabase 查對應嘅 shop_name
         window.onload = async function() {
             const shopTag = document.getElementById("shopTag");
             if (!targetMachineId) {
@@ -63,8 +64,8 @@
                 if (res.ok) {
                     const data = await res.json();
                     if (data && data.length > 0 && data[0].shop_name) {
-                        globalShopName = data[0].shop_name;
-                        shopTag.innerText = `📍 ${globalShopName}`;
+                        currentShopName = data[0].shop_name;
+                        shopTag.innerText = `📍 ${currentShopName}`;
                     } else {
                         shopTag.innerText = `📍 分店編號: ${targetMachineId}`;
                     }
@@ -77,7 +78,7 @@
             }
         };
 
-        // 點擊查詢會員資料
+        // 3. 點擊查詢按鈕
         async function queryMemberData() {
             const phone = document.getElementById("phoneInput").value.trim();
             const resultArea = document.getElementById("resultArea");
@@ -95,6 +96,7 @@
             errorArea.innerText = "正在查詢中...";
 
             try {
+                // 用 machine_id 精準抓取該店嘅 shop_name 同 member_detailed_data
                 const res = await fetch(`${SUPABASE_URL}/rest/v1/member_clouds?machine_id=eq.${targetMachineId}&select=shop_name,member_detailed_data`, {
                     headers: {
                         "apikey": SUPABASE_ANON_KEY,
@@ -109,7 +111,8 @@
 
                 if (rows && rows.length > 0) {
                     if (rows[0].shop_name) {
-                        globalShopName = rows[0].shop_name;
+                        currentShopName = rows[0].shop_name;
+                        document.getElementById("shopTag").innerText = `📍 ${currentShopName}`;
                     }
                     const memberList = rows[0].member_detailed_data;
                     if (Array.isArray(memberList)) {
@@ -141,7 +144,7 @@
                 resultArea.style.display = "block";
                 resultArea.innerHTML = `
                     <h3 style="margin-top:0; color:#1f2937; text-align:center;">👤 ${foundMember.name || '尊貴會員'}</h3>
-                    <div class="info-row"><span>分店名稱：</span><strong>${globalShopName || targetMachineId}</strong></div>
+                    <div class="info-row"><span>分店名稱：</span><strong>${currentShopName || targetMachineId}</strong></div>
                     <div class="info-row"><span>帳戶餘額：</span><strong style="color: #059669; font-size: 18px;">¥${foundMember.balance || 0}</strong></div>
                     <div class="info-row"><span>會員等級：</span><span>${foundMember.level || '普通會員'}</span></div>
                     <hr style="border:0; border-top:1px solid #e5e7eb; margin: 15px 0;">
