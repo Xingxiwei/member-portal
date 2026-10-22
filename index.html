@@ -8,7 +8,7 @@
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f6f8; margin: 0; padding: 20px; color: #333; }
         .container { max-width: 480px; margin: 20px auto; background: #fff; padding: 24px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
         h2 { text-align: center; color: #4f46e5; margin-bottom: 8px; }
-        .shop-tag { text-align: center; font-size: 15px; font-weight: bold; color: #4f46e5; margin-bottom: 20px; background: #e0e7ff; padding: 8px; border-radius: 6px; }
+        .shop-tag { text-align: center; font-size: 16px; font-weight: bold; color: #4f46e5; margin-bottom: 20px; background: #e0e7ff; padding: 10px; border-radius: 6px; }
         .form-group { margin-bottom: 16px; }
         label { display: block; margin-bottom: 6px; font-weight: 500; }
         input { width: 100%; padding: 12px; box-sizing: border-box; border: 1px solid #d1d5db; border-radius: 8px; font-size: 16px; }
@@ -23,7 +23,7 @@
 <body>
     <div class="container">
         <h2>🏷️ 會員自助查詢</h2>
-        <div id="shopTag" class="shop-tag">📍 載入中...</div>
+        <div id="shopTag" class="shop-tag">📍 正在加載店舖名稱...</div>
 
         <div class="form-group">
             <label for="phoneInput">請輸入您的手機號碼：</label>
@@ -39,19 +39,24 @@
         const SUPABASE_URL = "https://owcguwdxmovpatykihny.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_f2V-7tru25_ZKjjq1KE09A_p_CYvKda"; 
 
+        // 1. 取得網址入面嘅 machine_id
         const urlParams = new URLSearchParams(window.location.search);
-        const targetShop = urlParams.get('shop') || urlParams.get('machine_id') || "";
+        const targetMachineId = urlParams.get('machine_id') || urlParams.get('shop') || "";
 
-        // 頁面載入時自動取得正確的店舖名字
+        let currentShopName = "會員查詢系統";
+
+        // 2. 網頁一載入，立刻用 machine_id 去 Supabase 對比抓取對應嘅 shop_name
         window.onload = async function() {
             const shopTag = document.getElementById("shopTag");
-            if (!targetShop) {
+            
+            if (!targetMachineId) {
                 shopTag.innerText = `📍 全店通用查詢`;
                 return;
             }
 
             try {
-                const res = await fetch(`${SUPABASE_URL}/rest/v1/member_clouds?select=machine_id,shop_name`, {
+                // 直接透過 machine_id 過濾查詢資料庫
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/member_clouds?machine_id=eq.${targetMachineId}&select=shop_name`, {
                     headers: {
                         "apikey": SUPABASE_ANON_KEY,
                         "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
@@ -59,26 +64,27 @@
                 });
 
                 if (res.ok) {
-                    const rows = await res.json();
-                    const matched = rows.find(r => r.machine_id === targetShop);
-                    if (matched && matched.shop_name) {
-                        shopTag.innerText = `📍 ${matched.shop_name}`;
+                    const data = await res.json();
+                    if (data && data.length > 0 && data[0].shop_name) {
+                        currentShopName = data[0].shop_name;
+                        shopTag.innerText = `📍 ${currentShopName}`;
                     } else {
-                        shopTag.innerText = `📍 分店: ${targetShop}`;
+                        shopTag.innerText = `📍 分店: ${targetMachineId}`;
                     }
                 } else {
-                    shopTag.innerText = `📍 分店: ${targetShop}`;
+                    shopTag.innerText = `📍 分店: ${targetMachineId}`;
                 }
             } catch (err) {
-                shopTag.innerText = `📍 分店: ${targetShop}`;
+                console.error(err);
+                shopTag.innerText = `📍 分店: ${targetMachineId}`;
             }
         };
 
+        // 3. 點擊查詢會員資料
         async function queryMemberData() {
             const phone = document.getElementById("phoneInput").value.trim();
             const resultArea = document.getElementById("resultArea");
             const errorArea = document.getElementById("errorArea");
-            const shopTag = document.getElementById("shopTag");
             
             resultArea.style.display = "none";
             resultArea.innerHTML = "";
@@ -92,7 +98,8 @@
             errorArea.innerText = "正在查詢中...";
 
             try {
-                const res = await fetch(`${SUPABASE_URL}/rest/v1/member_clouds?select=machine_id,shop_name,phone,member_detailed_data`, {
+                // 根據 machine_id 抓取該分店嘅完整會員資料
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/member_clouds?machine_id=eq.${targetMachineId}&select=member_detailed_data`, {
                     headers: {
                         "apikey": SUPABASE_ANON_KEY,
                         "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
@@ -103,23 +110,11 @@
 
                 const rows = await res.json();
                 let foundMember = null;
-                let shopName = "分店";
 
-                for (let row of rows) {
-                    const matchShop = !targetShop || row.machine_id === targetShop || row.shop_name === targetShop;
-                    
-                    if (matchShop) {
-                        if (row.shop_name) {
-                            shopName = row.shop_name;
-                            shopTag.innerText = `📍 ${shopName}`;
-                        }
-                        if (row.member_detailed_data && Array.isArray(row.member_detailed_data)) {
-                            const match = row.member_detailed_data.find(m => m.phone === phone);
-                            if (match) {
-                                foundMember = match;
-                                break;
-                            }
-                        }
+                if (rows && rows.length > 0 && rows[0].member_detailed_data) {
+                    const memberList = rows[0].member_detailed_data;
+                    if (Array.isArray(memberList)) {
+                        foundMember = memberList.find(m => m.phone === phone);
                     }
                 }
 
@@ -136,7 +131,7 @@
                     foundMember.passes.forEach(p => {
                         passesHtml += `
                             <div class="card-item">
-                                <div class="info-row"><b>${p.card_name || '次卡'}</b><span>剩餘: <strong style="color:#4f46e5;">${p.remain_count || 0}</strong> / 總数: ${p.total_count || 0}</span></div>
+                                <div class="info-row"><b>${p.card_name || '次卡'}</b><span>剩餘: <strong style="color:#4f46e5;">${p.remain_count || 0}</strong> / 總數: ${p.total_count || 0}</span></div>
                             </div>
                         `;
                     });
@@ -147,7 +142,7 @@
                 resultArea.style.display = "block";
                 resultArea.innerHTML = `
                     <h3 style="margin-top:0; color:#1f2937; text-align:center;">👤 ${foundMember.name || '尊貴會員'}</h3>
-                    <div class="info-row"><span>分店名稱：</span><strong>${shopName}</strong></div>
+                    <div class="info-row"><span>分店名稱：</span><strong>${currentShopName}</strong></div>
                     <div class="info-row"><span>帳戶餘額：</span><strong style="color: #059669; font-size: 18px;">¥${foundMember.balance || 0}</strong></div>
                     <div class="info-row"><span>會員等級：</span><span>${foundMember.level || '普通會員'}</span></div>
                     <hr style="border:0; border-top:1px solid #e5e7eb; margin: 15px 0;">
