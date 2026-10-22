@@ -23,7 +23,7 @@
 <body>
     <div class="container">
         <h2>🏷️ 會員自助查詢</h2>
-        <div id="shopTag" class="shop-tag">正在識別分店...</div>
+        <div id="shopTag" class="shop-tag">正在識別店舖...</div>
 
         <div class="form-group">
             <label for="phoneInput">請輸入您的手機號碼：</label>
@@ -36,23 +36,19 @@
     </div>
 
     <script>
-        // 💡 1. 核心配置參數
         const SUPABASE_URL = "https://owcguwdxmovpatykihny.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_f2V-7tru25_ZKjjq1KE09A_p_CYvKda"; 
 
-        // 💡 2. 自動抓取網址後面的分店標識 (例如 ?shop=A店 或 ?machine_id=xxx)
         const urlParams = new URLSearchParams(window.location.search);
         const targetShop = urlParams.get('shop') || urlParams.get('machine_id') || "";
 
-        // 💡 3. 頁面載入時自動向 Supabase 查詢對應的店舖名稱
+        // 頁面載入時自動取得 shop_name 顯示
         window.onload = async function() {
             const shopTag = document.getElementById("shopTag");
             if (!targetShop) {
                 shopTag.innerText = `📍 全店通用查詢`;
                 return;
             }
-
-            shopTag.innerText = `📍 正在載入店舖名稱...`;
 
             try {
                 const res = await fetch(`${SUPABASE_URL}/rest/v1/member_clouds?machine_id=eq.${targetShop}&select=shop_name`, {
@@ -67,14 +63,13 @@
                     if (data && data.length > 0 && data[0].shop_name) {
                         shopTag.innerText = `📍 ${data[0].shop_name}`;
                     } else {
-                        shopTag.innerText = `📍 當前查詢分店: ${targetShop}`;
+                        shopTag.innerText = `📍 當前分店: ${targetShop}`;
                     }
                 } else {
-                    shopTag.innerText = `📍 當前查詢分店: ${targetShop}`;
+                    shopTag.innerText = `📍 當前分店: ${targetShop}`;
                 }
             } catch (err) {
-                console.error(err);
-                shopTag.innerText = `📍 當前查詢分店: ${targetShop}`;
+                shopTag.innerText = `📍 當前分店: ${targetShop}`;
             }
         };
 
@@ -95,7 +90,6 @@
             errorArea.innerText = "正在查詢中...";
 
             try {
-                // 從 Supabase 雲端捉取數據
                 const res = await fetch(`${SUPABASE_URL}/rest/v1/member_clouds?select=machine_id,shop_name,phone,member_detailed_data`, {
                     headers: {
                         "apikey": SUPABASE_ANON_KEY,
@@ -109,9 +103,7 @@
                 let foundMember = null;
                 let shopName = "分店";
 
-                // 如果網址帶有分店參數，優先精準匹配該分店；如果冇就全域搵
                 for (let row of rows) {
-                    // 判斷是否符合當前分店（透過 machine_id 或 shop_name 匹配）
                     const matchShop = !targetShop || row.machine_id === targetShop || row.shop_name === targetShop;
                     
                     if (matchShop && row.member_detailed_data && Array.isArray(row.member_detailed_data)) {
@@ -131,14 +123,13 @@
 
                 errorArea.innerText = "";
                 
-                // 渲染次卡資料
                 let passesHtml = "";
                 if (foundMember.passes && foundMember.passes.length > 0) {
                     passesHtml = "<h4>🎫 次卡剩餘情況：</h4>";
                     foundMember.passes.forEach(p => {
                         passesHtml += `
                             <div class="card-item">
-                                <div class="info-row"><b>${p.card_name}</b><span>剩餘: <strong style="color:#4f46e5;">${p.remain_count}</strong> / 總數: ${p.total_count}</span></div>
+                                <div class="info-row"><b>${p.card_name || '次卡'}</b><span>剩餘: <strong style="color:#4f46e5;">${p.remain_count || 0}</strong> / 總數: ${p.total_count || 0}</span></div>
                             </div>
                         `;
                     });
