@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>會員自助查詢 - 分店專屬</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f6f8; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 480px; margin: 20px auto; background: #fff; padding: 24px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        h2 { text-align: center; color: #4f46e5; margin-bottom: 8px; }
+        .shop-tag { text-align: center; font-size: 14px; color: #6b7280; margin-bottom: 20px; background: #e0e7ff; padding: 6px; border-radius: 6px; }
+        .form-group { margin-bottom: 16px; }
+        label { display: block; margin-bottom: 6px; font-weight: 500; }
+        input { width: 100%; padding: 12px; box-sizing: border-box; border: 1px solid #d1d5db; border-radius: 8px; font-size: 16px; }
+        button { width: 100%; padding: 12px; background: #4f46e5; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #4338ca; }
+        .result-box { margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 16px; }
+        .card-item { background: #f9fafb; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #4f46e5; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 15px; }
+        .error { color: #dc2626; text-align: center; margin-top: 15px; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🏷️ 會員自助查詢</h2>
+        <div id="shopTag" class="shop-tag">正在識別分店...</div>
+
+        <div class="form-group">
+            <label for="phoneInput">請輸入您的手機號碼：</label>
+            <input type="tel" id="phoneInput" placeholder="請輸入註冊手機號碼">
+        </div>
+        <button onclick="queryMemberData()">立即查詢</button>
+        
+        <div id="resultArea" class="result-box" style="display: none;"></div>
+        <div id="errorArea" class="error"></div>
+    </div>
+
+    <script>
+        // 💡 1. 核心配置參數
+        const SUPABASE_URL = "https://owcguwdxmovpatykihny.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_f2V-7tru25_ZKjjq1KE09A_p_CYvKda"; 
+
+        // 💡 2. 自動抓取網址後面的分店標識 (例如 ?shop=A店 或 ?machine_id=xxx)
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetShop = urlParams.get('shop') || urlParams.get('machine_id') || "";
+
+        window.onload = function() {
+            const shopTag = document.getElementById("shopTag");
+            if (targetShop) {
+                shopTag.innerText = `📍 當前查詢分店編號: ${targetShop}`;
+            } else {
+                shopTag.innerText = `📍 全店通用查詢`;
+            }
+        };
+
+        async function queryMemberData() {
+            const phone = document.getElementById("phoneInput").value.trim();
+            const resultArea = document.getElementById("resultArea");
+            const errorArea = document.getElementById("errorArea");
+            
+            resultArea.style.display = "none";
+            resultArea.innerHTML = "";
+            errorArea.innerHTML = "";
+
+            if (!phone) {
+                errorArea.innerText = "請先輸入手機號碼！";
+                return;
+            }
+
+            errorArea.innerText = "正在查詢中...";
+
+            try {
+                // 從 Supabase 雲端捉取數據
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/member_clouds?select=machine_id,shop_name,phone,member_detailed_data`, {
+                    headers: {
+                        "apikey": SUPABASE_ANON_KEY,
+                        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+
+                if (!res.ok) throw new Error("網絡請求失敗");
+
+                const rows = await res.json();
+                let foundMember = null;
+                let shopName = "分店";
+
+                // 如果網址帶有分店參數，優先精準匹配該分店；如果冇就全域搵
+                for (let row of rows) {
+                    // 判斷是否符合當前分店（透過 machine_id 或 shop_name 匹配）
+                    const matchShop = !targetShop || row.machine_id === targetShop || row.shop_name === targetShop;
+                    
+                    if (matchShop && row.member_detailed_data && Array.isArray(row.member_detailed_data)) {
+                        const match = row.member_detailed_data.find(m => m.phone === phone);
+                        if (match) {
+                            foundMember = match;
+                            shopName = row.shop_name || "分店";
+                            break;
+                        }
+                    }
+                }
+
+                if (!foundMember) {
+                    errorArea.innerText = "❌ 在此分店搵唔到該手機號碼對應嘅會員資料，請確認號碼是否正確。";
+                    return;
+                }
+
+                errorArea.innerText = "";
+                
+                // 渲染次卡資料
+                let passesHtml = "";
+                if (foundMember.passes && foundMember.passes.length > 0) {
+                    passesHtml = "<h4>🎫 次卡剩餘情況：</h4>";
+                    foundMember.passes.forEach(p => {
+                        passesHtml += `
+                            <div class="card-item">
+                                <div class="info-row"><b>${p.card_name}</b><span>剩餘: <strong style="color:#4f46e5;">${p.remain_count}</strong> / 總數: ${p.total_count}</span></div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    passesHtml = "<p style='color: #666; text-align: center;'>暫無次卡記錄</p>";
+                }
+
+                resultArea.style.display = "block";
+                resultArea.innerHTML = `
+                    <h3 style="margin-top:0; color:#1f2937; text-align:center;">👤 ${foundMember.name || '尊貴會員'}</h3>
+                    <div class="info-row"><span>分店名稱：</span><strong>${shopName}</strong></div>
+                    <div class="info-row"><span>帳戶餘額：</span><strong style="color: #059669; font-size: 18px;">¥${foundMember.balance || 0}</strong></div>
+                    <div class="info-row"><span>會員等級：</span><span>${foundMember.level || '普通會員'}</span></div>
+                    <hr style="border:0; border-top:1px solid #e5e7eb; margin: 15px 0;">
+                    ${passesHtml}
+                `;
+
+            } catch (err) {
+                console.error(err);
+                errorArea.innerText = "❌ 查詢出錯，請稍後重試。";
+            }
+        }
+    </script>
+</body>
+</html>
