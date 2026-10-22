@@ -23,7 +23,7 @@
 <body>
     <div class="container">
         <h2>🏷️ 會員自助查詢</h2>
-        <div id="shopTag" class="shop-tag">📍 正在加載店舖名稱...</div>
+        <div id="shopTag" class="shop-tag">📍 載入中...</div>
 
         <div class="form-group">
             <label for="phoneInput">請輸入您的手機號碼：</label>
@@ -39,48 +39,28 @@
         const SUPABASE_URL = "https://owcguwdxmovpatykihny.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_f2V-7tru25_ZKjjq1KE09A_p_CYvKda"; 
 
-        // 1. 取得網址入面嘅 machine_id
         const urlParams = new URLSearchParams(window.location.search);
         const targetMachineId = urlParams.get('machine_id') || urlParams.get('shop') || "";
 
+        // 💡 直接根據 machine_id 對應顯示店舖名字
         let currentShopName = "會員查詢系統";
+        if (targetMachineId === "DEV_jt3ekbqmspqp5r8") {
+            currentShopName = "拼豆體驗館管理系統网页";
+        } else if (targetMachineId) {
+            currentShopName = targetMachineId;
+        }
 
-        // 2. 網頁一載入，立刻用 machine_id 去 Supabase 對比抓取對應嘅 shop_name
-        window.onload = async function() {
+        // 頁面一開直接顯示
+        window.onload = function() {
             const shopTag = document.getElementById("shopTag");
-            
-            if (!targetMachineId) {
+            if (targetMachineId) {
+                shopTag.innerText = `📍 ${currentShopName}`;
+            } else {
                 shopTag.innerText = `📍 全店通用查詢`;
-                return;
-            }
-
-            try {
-                // 直接透過 machine_id 過濾查詢資料庫
-                const res = await fetch(`${SUPABASE_URL}/rest/v1/member_clouds?machine_id=eq.${targetMachineId}&select=shop_name`, {
-                    headers: {
-                        "apikey": SUPABASE_ANON_KEY,
-                        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
-                    }
-                });
-
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data && data.length > 0 && data[0].shop_name) {
-                        currentShopName = data[0].shop_name;
-                        shopTag.innerText = `📍 ${currentShopName}`;
-                    } else {
-                        shopTag.innerText = `📍 分店: ${targetMachineId}`;
-                    }
-                } else {
-                    shopTag.innerText = `📍 分店: ${targetMachineId}`;
-                }
-            } catch (err) {
-                console.error(err);
-                shopTag.innerText = `📍 分店: ${targetMachineId}`;
             }
         };
 
-        // 3. 點擊查詢會員資料
+        // 點擊查詢會員資料
         async function queryMemberData() {
             const phone = document.getElementById("phoneInput").value.trim();
             const resultArea = document.getElementById("resultArea");
@@ -98,7 +78,7 @@
             errorArea.innerText = "正在查詢中...";
 
             try {
-                // 根據 machine_id 抓取該分店嘅完整會員資料
+                // 直接透過 machine_id 抓取會員數據（呢個 API 之前測試過係成功運作嘅）
                 const res = await fetch(`${SUPABASE_URL}/rest/v1/member_clouds?machine_id=eq.${targetMachineId}&select=member_detailed_data`, {
                     headers: {
                         "apikey": SUPABASE_ANON_KEY,
