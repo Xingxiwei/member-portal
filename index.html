@@ -44,12 +44,37 @@
         const urlParams = new URLSearchParams(window.location.search);
         const targetShop = urlParams.get('shop') || urlParams.get('machine_id') || "";
 
-        window.onload = function() {
+        // 💡 3. 頁面載入時自動向 Supabase 查詢對應的店舖名稱
+        window.onload = async function() {
             const shopTag = document.getElementById("shopTag");
-            if (targetShop) {
-                shopTag.innerText = `📍 當前查詢分店編號: ${targetShop}`;
-            } else {
+            if (!targetShop) {
                 shopTag.innerText = `📍 全店通用查詢`;
+                return;
+            }
+
+            shopTag.innerText = `📍 正在載入店舖名稱...`;
+
+            try {
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/member_clouds?machine_id=eq.${targetShop}&select=shop_name`, {
+                    headers: {
+                        "apikey": SUPABASE_ANON_KEY,
+                        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.length > 0 && data[0].shop_name) {
+                        shopTag.innerText = `📍 ${data[0].shop_name}`;
+                    } else {
+                        shopTag.innerText = `📍 當前查詢分店: ${targetShop}`;
+                    }
+                } else {
+                    shopTag.innerText = `📍 當前查詢分店: ${targetShop}`;
+                }
+            } catch (err) {
+                console.error(err);
+                shopTag.innerText = `📍 當前查詢分店: ${targetShop}`;
             }
         };
 
