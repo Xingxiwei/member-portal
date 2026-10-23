@@ -171,19 +171,16 @@
             if (filteredPasses.length > 0) {
                 filteredPasses.forEach(p => {
                     const remain = p.remain_count ?? 0;
-                    // 精準對齊收銀端嘅 id 欄位
                     const cardId = p.id || p.card_id || 'N/A';
                     
                     let historyHtml = "";
                     if (p.history && Array.isArray(p.history) && p.history.length > 0) {
-                        // 🎯 複製一份並按時間由新到舊（降序）排序，確保最新嘅永遠排喺最頂
                         const sortedHistory = [...p.history].sort((a, b) => {
                             const timeA = new Date(a.time || a.date || 0).getTime();
                             const timeB = new Date(b.time || b.date || 0).getTime();
                             return timeB - timeA;
                         });
                     
-                        // 只取最近 3 次記錄
                         const recentHistory = sortedHistory.slice(0, 3);
                         
                         historyHtml = `<div class="history-box"><div class="history-title">📜 專屬歷程（最近3次）</div>`;
@@ -193,30 +190,24 @@
                             const opStr = h.operation || h.type || '異動';
                             const changeVal = h.change !== undefined ? h.change : (h.count || 0);
 
-                            // 🎯 智慧精簡顯示邏輯
                             let displayContent = "";
                             
                             if (remarkStr.includes("桌號") || remarkStr.includes("使用次卡") || remarkStr.includes("扣除")) {
-                                // 1. 扣次記錄
                                 displayContent = `<span style="color:#333;">${remarkStr}</span>`;
                             } else if (opStr.includes("退") || remarkStr.includes("退卡")) {
-                                // 2. 退卡記錄：提取退款金額、方式及原因編號
                                 const payMethodMatch = remarkStr.match(/方式[:：]?\s*([^\,\s\]]+)/);
                                 const payMethod = payMethodMatch ? payMethodMatch[1] : "現金";
                                 const absChange = Math.abs(changeVal);
                                 
-                                // 提取退款金額（支援 退款:100 或 金額:100）
                                 const refundMatch = remarkStr.match(/(?:退款|金額)[:：]?\s*([^\,\s\]]+)/);
                                 const refundAmount = refundMatch ? refundMatch[1] : "";
                                 const refundStr = refundAmount ? `, 退款:¥${refundAmount}` : "";
                                 
-                                // 提取退卡原因號碼（如結尾的 (1)）
                                 const reasonMatch = remarkStr.match(/\((\d+)\)\s*$/);
                                 const reasonNum = reasonMatch ? `(${reasonMatch[1]})` : "";
                                 
                                 displayContent = `<span style="color:#333; font-weight:500;">辦理退卡 ${absChange}次 <span style="color:#666; font-weight:normal;">[方式:${payMethod}${refundStr}]</span> ${reasonNum}</span>`;
                             } else if (opStr.includes("買") || remarkStr.includes("購買") || remarkStr.includes("次卡購買")) {
-                                // 3. 購買次卡記錄：精簡化，洗走重覆字眼，提取金額同方式
                                 const amountMatch = remarkStr.match(/金額[:：]?\s*([^\,\s\]]+)/);
                                 const payMethodMatch = remarkStr.match(/方式[:：]?\s*([^\,\s\]]+)/);
                                 
@@ -225,12 +216,10 @@
                                 
                                 displayContent = `<span style="color:#333; font-weight:500;">購買次卡 <strong style="color:#059669;">+${changeVal}次</strong> <span style="color:#666; font-weight:normal;">[金額:${amount}, 方式:${payMethod}]</span></span>`;
                             } else {
-                                // 4. 其他預設格式
                                 const colorStyle = changeVal > 0 ? '#059669' : '#dc2626';
                                 displayContent = `<span>${opStr} <strong style="color:${colorStyle}">${changeVal > 0 ? '+' + changeVal : changeVal}次</strong></span> <span style="color:#666; font-size:12px;">${remarkStr}</span>`;
                             }
 
-                            // 上下分行排版
                             historyHtml += `
                                 <div style="padding: 6px 0; border-bottom: 1px solid #f3f4f6; font-size: 13px;">
                                     <div style="color: #6b7280; font-family: monospace; margin-bottom: 2px;">🕒 ${timeStr}</div>
