@@ -44,7 +44,8 @@
 
     <script>
         const SUPABASE_URL = "https://owcguwdxmovpatykihny.supabase.co";
-        const LEGACY_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93Y2d1d2R4bW92cGF0eWtpaG55Ikwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1MDAxMTMsImV4cCI6MjEwMjA3NjExM30.ICq8Q0LUdd-W0ZdGiiSlmRwgQd-uuGRO07_L-Vrl6dQ"; 
+        // ⚡ 修正正確、無斷行嘅 Legacy Anon Key
+        const LEGACY_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93Y2d1d2R4bW92cGF0eWtpaG55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1MDAxMTMsImV4cCI6MjEwMjA3NjExM30.ICq8Q0LUdd-W0ZdGiiSlmRwgQd-uuGRO07_L-Vrl6dQ"; 
         const NEW_PUBLISHABLE_KEY = "sb_publishable_f2V-7tru25_ZKjqq1KE09A_p_CYvKda";
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -171,13 +172,11 @@
             if (filteredPasses.length > 0) {
                 filteredPasses.forEach(p => {
                     const remain = p.remain_count ?? 0;
-                    // 正確抓取卡片的 ID 欄位
                     const cardId = p.id || p.card_id || p.pass_id || 'N/A';
                     
                     let historyHtml = "";
                     if (p.history && Array.isArray(p.history) && p.history.length > 0) {
-                        // ⚡ 關鍵優化：只取最近 3 次記錄，節省效能與版面
-                        const recentHistory = p.history.slice(0, 3);
+                        const recentHistory = p.history.slice(0, 3); // ⚡ 只取最近 3 次
                         
                         historyHtml = `<div class="history-box"><div class="history-title"><span>📜 專屬歷程（最近3次）</span></div>`;
                         recentHistory.forEach(h => {
