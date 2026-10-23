@@ -37,10 +37,40 @@
 
     <script>
         const SUPABASE_URL = "https://owcguwdxmovpatykihny.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93Y2d1d2R4bW92cGF0eWtpaG55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1MDAxMTMsImV4cCI6MjEwMjA3NjExM30.ICq8Q0LUdd-W0ZdGiiSlmRwgQd-uuGRO07_L-Vrl6dQ"; 
+        
+        // 🔑 同時定義兩組 Key，實現自動備援機制
+        const LEGACY_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93Y2d1d2R4bW92cGF0eWtpaG55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1MDAxMTMsImV4cCI6MjEwMjA3NjExM30.ICq8Q0LUdd-W0ZdGiiSlmRwgQd-uuGRO07_L-Vrl6dQ"; 
+        const NEW_PUBLISHABLE_KEY = "sb_publishable_f2V-7tru25_ZKjqq1KE09A_p_CYvKda";
 
         const urlParams = new URLSearchParams(window.location.search);
         const targetShop = urlParams.get('shop') || urlParams.get('machine_id') || "";
+
+        // 智能封裝 fetch 請求：優先用 Legacy Key，如果 401 失敗則自動切換成新版 Publishable Key 重試
+        async function fetchWithFallback(endpoint) {
+            const keysToTry = [LEGACY_KEY, NEW_PUBLISHABLE_KEY];
+            
+            for (let i = 0; i < keysToTry.length; i++) {
+                const apiKey = keysToTry[i];
+                try {
+                    const res = await fetch(`${SUPABASE_URL}${endpoint}`, {
+                        headers: {
+                            "apikey": apiKey,
+                            "Authorization": `Bearer ${apiKey}`
+                        }
+                    });
+
+                    // 如果遇到 401（未授權/Key失效），且還有備用 Key，就進入下一次迴圈換新 Key 試
+                    if (res.status === 401 && i < keysToTry.length - 1) {
+                        console.warn("當前 API Key 驗證失敗，自動切換至備用 Key 重試...");
+                        continue;
+                    }
+
+                    return res;
+                } catch (err) {
+                    if (i === keysToTry.length - 1) throw err;
+                }
+            }
+        }
 
         // 頁面載入時自動取得正確的店舖名字
         window.onload = async function() {
@@ -51,14 +81,9 @@
             }
 
             try {
-                const res = await fetch(`${SUPABASE_URL}/rest/v1/member_clouds?select=machine_id,shop_name`, {
-                    headers: {
-                        "apikey": SUPABASE_ANON_KEY,
-                        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
-                    }
-                });
+                const res = await fetchWithFallback(`/rest/v1/member_clouds?select=machine_id,shop_name`);
 
-                if (res.ok) {
+                if (res && res.ok) {
                     const rows = await res.json();
                     const matched = rows.find(r => r.machine_id === targetShop);
                     if (matched && matched.shop_name) {
@@ -92,14 +117,9 @@
             errorArea.innerText = "正在查詢中...";
 
             try {
-                const res = await fetch(`${SUPABASE_URL}/rest/v1/member_clouds?select=machine_id,shop_name,phone,member_detailed_data`, {
-                    headers: {
-                        "apikey": SUPABASE_ANON_KEY,
-                        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
-                    }
-                });
+                const res = await fetchWithFallback(`/rest/v1/member_clouds?select=machine_id,shop_name,phone,member_detailed_data`);
 
-                if (!res.ok) throw new Error("網絡請求失敗");
+                if (!res || !res.ok) throw new Error("網絡請求失敗");
 
                 const rows = await res.json();
                 let foundMember = null;
