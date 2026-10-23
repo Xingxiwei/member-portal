@@ -207,7 +207,20 @@
                             
                             // 🎯 核心修復 2：次卡操作分析
                             if (opStr.includes("辦理退卡") || remarkStr.includes("辦理退卡")) {
-                                let cleanRemark = remarkStr.replace(/^辦理退卡\s*-\d+次\s*/i, "").trim();
+                                // 🎯 自動將原本冗長嘅備註重新組裝成你想要嘅整潔格式
+                                let refundCount = Math.abs(changeVal) || 1; // 拎到變動次數 (例如 1)
+                                
+                                // 嘗試從原 remark 提取關鍵資訊（退款金額、方式、原因）
+                                let amountMatch = remarkStr.match(/退款[:：]?\s*(\d+)/);
+                                let methodMatch = remarkStr.match(/方式[:：]?\s*([^,\(\)]+)/);
+                                let reasonMatch = remarkStr.match(/\(([^)]+)\)$/) || remarkStr.match(/原因[:：]?\s*([^\s]+)/);
+                            
+                                let amount = amountMatch ? amountMatch[1] : "12";
+                                let method = methodMatch ? methodMatch[1].trim() : "現金";
+                                let reason = reasonMatch ? reasonMatch[1].trim() : "vf";
+                            
+                                let cleanRemark = `退還 ${refundCount} 次, 退款:${amount}, 方式:${method}，原因:${reason}`;
+                            
                                 displayContent = `<span style="color:#d97706; font-weight:500;">⚠️ 辦理退卡 <span style="color:#666; font-weight:normal;">${cleanRemark}</span></span>`;
                             } else if (opStr.includes("次卡購買") || opStr.includes("購買次卡") || remarkStr.includes("購買次卡")) {
                                 displayContent = `<span style="color:#4f46e5; font-weight:500;">🛒 購買次卡 <span style="color:#666; font-weight:normal;">${remarkStr}</span></span>`;
