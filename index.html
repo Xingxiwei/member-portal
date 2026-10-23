@@ -206,16 +206,26 @@
                             let displayContent = "";
                             
                             // 🎯 核心修復 2：次卡操作分析
-                            if (opStr.includes("辦理退卡") || remarkStr.includes("辦理退卡")) {
-                                let refundCount = Math.abs(changeVal) || 1; 
+                           if (opStr.includes("辦理退卡") || remarkStr.includes("辦理退卡")) {
+                                let refundCount = Math.abs(Number(changeVal) || 1); 
+                                
                                 let amountMatch = remarkStr.match(/退款[：:]\s*([0-9\.]+)/);
-                                let methodMatch = remarkStr.match(/方式[：:]\s*([^,\，\(\)\]]+)/);
+                                let methodMatch = remarkStr.match(/方式[：:]\s*([^,\，\(\)\]\s]+)/);
                                 let reasonMatch = remarkStr.match(/\(([^)]+)\)\s*$/) || remarkStr.match(/原因[：:]\s*([^\s]+)/);
-                                // 如果抓唔到就嘗試去原始數據找，再唔係就畀預設值
+                            
+                                // 🎯 抓唔到就直接畀空字串，唔要任何預設值
                                 let amount = amountMatch ? amountMatch[1] : "";
                                 let method = methodMatch ? methodMatch[1].trim() : "";
                                 let reason = reasonMatch ? reasonMatch[1].trim() : "";
-                                let cleanRemark = `退還 ${refundCount} 次, 退款:${amount}, 方式:${method}，原因:${reason}`;
+                            
+                                // 組合字串：如果抓唔到嘅部分就自動唔展示或者留空
+                                let parts = [];
+                                parts.push(`退還 ${refundCount} 次`);
+                                if (amount) parts.push(`退款:${amount}`);
+                                if (method) parts.push(`方式:${method}`);
+                                if (reason) parts.push(`原因:${reason}`);
+                            
+                                let cleanRemark = parts.join(", ");
                                 displayContent = `<span style="color:#d97706; font-weight:500;">⚠️ 辦理退卡 <span style="color:#666; font-weight:normal;">${cleanRemark}</span></span>`;
                             } else if (opStr.includes("次卡購買") || opStr.includes("購買次卡") || remarkStr.includes("購買次卡")) {
                                 displayContent = `<span style="color:#4f46e5; font-weight:500;">🛒 購買次卡 <span style="color:#666; font-weight:normal;">${remarkStr}</span></span>`;
