@@ -208,7 +208,7 @@
                                 const reasonMatch = remarkStr.match(/\((\d+)\)\s*$/);
                                 const reasonNum = reasonMatch ? `(${reasonMatch[1]})` : "";
                                 
-                                displayContent = `<span style="color:#333; font-weight:500;">辦理退卡 ${absChange}次 <span style="color:#666; font-weight:normal;">[方式:${payMethod}${refundStr}]</span> ${reasonNum}</span>`;
+                                displayContent = `<span style="color:#333; font-weight:500;">辦理退卡<span style="color:#666; font-weight:normal;">[${absChange}次 方式:${payMethod}${refundStr}]</span> ${reasonNum}</span>`;
                             } else if (opStr.includes("買") || remarkStr.includes("購買") || remarkStr.includes("次卡購買")) {
                                 const amountMatch = remarkStr.match(/金額[:：]?\s*([^\,\s\]]+)/);
                                 const payMethodMatch = remarkStr.match(/方式[:：]?\s*([^\,\s\]]+)/);
