@@ -207,52 +207,49 @@
                             
                             // 🎯 核心修復 2：次卡操作分析
                            if (opStr.includes("辦理退卡") || remarkStr.includes("辦理退卡")) {
-                                let refundCount = Math.abs(Number(changeVal) || 1); 
-                                
-                                let amountMatch = remarkStr.match(/退款[：:]\s*([0-9\.]+)/);
-                                let methodMatch = remarkStr.match(/方式[：:]\s*([^,\，\(\)\]\s]+)/);
-                                let reasonMatch = remarkStr.match(/\(([^)]+)\)\s*$/) || remarkStr.match(/原因[：:]\s*([^\s]+)/);
+                            let refundCount = Math.abs(Number(changeVal) || 1); 
                             
-                                // 🎯 抓唔到就直接畀空字串，唔要任何預設值
-                                let amount = amountMatch ? amountMatch[1] : "";
-                                let method = methodMatch ? methodMatch[1].trim() : "";
-                                let reason = reasonMatch ? reasonMatch[1].trim() : "";
+                            let amountMatch = remarkStr.match(/退款[：:]\s*([0-9\.]+)/);
+                            let methodMatch = remarkStr.match(/方式[：:]\s*([^,\，\(\)\]\s]+)/);
+                            let reasonMatch = remarkStr.match(/\(([^)]+)\)\s*$/) || remarkStr.match(/原因[：:]\s*([^\s]+)/);
                             
-                                // 組合字串：如果抓唔到嘅部分就自動唔展示或者留空
-                                let parts = [];
-                                parts.push(`退還 ${refundCount} 次`);
-                                if (amount) parts.push(`退款:${amount}`);
-                                if (method) parts.push(`方式:${method}`);
-                                if (reason) parts.push(`原因:${reason}`);
+                            let amount = amountMatch ? amountMatch[1] : "";
+                            let method = methodMatch ? methodMatch[1].trim() : "";
+                            let reason = reasonMatch ? reasonMatch[1].trim() : "";
                             
-                                let cleanRemark = parts.join(", ");
-                                displayContent = `<span style="color:#d97706; font-weight:500;">⚠️ 辦理退卡 <span style="color:#666; font-weight:normal;">${cleanRemark}</span></span>`;
-                            } else if (opStr.includes("次卡購買") || opStr.includes("購買次卡") || remarkStr.includes("購買次卡")) {
-                                let buyCount = Math.abs(Number(changeVal) || 1);
-                                
-                                // 動態正則抓取金額、方式（完全不使用預設值，抓唔到就留空）
-                                let amountMatch = remarkStr.match(/金額[：:]\s*([0-9\.]+)/);
-                                let methodMatch = remarkStr.match(/方式[：:]\s*([^,\，\(\)\]\s]+)/);
+                            let parts = [];
+                            parts.push(`退還 ${refundCount} 次`);
+                            if (amount) parts.push(`退款:${amount}`);
+                            if (method) parts.push(`方式:${method}`);
+                            if (reason) parts.push(`原因:${reason}`);
                             
-                                let amount = amountMatch ? amountMatch[1] : "";
-                                let method = methodMatch ? methodMatch[1].trim() : "";
+                            let cleanRemark = parts.join(", ");
+                            displayContent = `<span style="color:#d97706; font-weight:500;">⚠️ 辦理退卡 <span style="color:#666; font-weight:normal;">${cleanRemark}</span></span>`;
+                        } else if (opStr.includes("次卡購買") || opStr.includes("購買次卡") || remarkStr.includes("購買次卡")) {
+                            let buyCount = Math.abs(Number(changeVal) || 1);
                             
-                                let parts = [];
-                                parts.push(`購買 ${buyCount} 次`);
-                                if (amount) parts.push(`金額:${amount}`);
-                                if (method) parts.push(`支付:${method}`);
+                            let amountMatch = remarkStr.match(/金額[：:]\s*([0-9\.]+)/);
+                            let methodMatch = remarkStr.match(/方式[：:]\s*([^,\，\(\)\]\s]+)/);
                             
-                                let cleanRemark = parts.join(", ");
-                                displayContent = `<span style="color:#4f46e5; font-weight:500;">🛒 購買次卡 <span style="color:#666; font-weight:normal;">${cleanRemark}</span></span>`;
-                            } else if (opStr.includes("次卡退還") || remarkStr.includes("退還") || remarkStr.includes("取消預劃卡")) {
-                                displayContent = `<span style="color:#059669; font-weight:500;">↩️ 次卡退還 <span style="color:#666; font-weight:normal;">${remarkStr}</span></span>`;
-                            } else if (opStr.includes("扣") || remarkStr.includes("使用")) {
-                                let cleanRemark = remarkStr.replace(/^\[?使用次卡[:：]?\s*/i, "").trim();
-                                displayContent = `<span style="color:#dc2626; font-weight:500;">⚡ 使用次卡 <span style="color:#666; font-weight:normal;">${cleanRemark}</span></span>`;
-                            } else {
-                                const colorStyle = changeVal > 0 ? '#059669' : '#dc2626';
-                                displayContent = `<span>${opStr} <strong style="color:${colorStyle}">${changeVal > 0 ? '+' + changeVal : changeVal}次</strong></span> <span style="color:#666; font-size:12px;">${remarkStr}</span>`;
-                            }
+                            let amount = amountMatch ? amountMatch[1] : "";
+                            let method = methodMatch ? methodMatch[1].trim() : "";
+                            
+                            let parts = [];
+                            parts.push(`購買 ${buyCount} 次`);
+                            if (amount) parts.push(`金額:${amount}`);
+                            if (method) parts.push(`支付:${method}`);
+                            
+                            let cleanRemark = parts.join(", ");
+                            displayContent = `<span style="color:#4f46e5; font-weight:500;">🛒 購買次卡 <span style="color:#666; font-weight:normal;">${cleanRemark}</span></span>`;
+                        } else if (opStr.includes("次卡退還") || remarkStr.includes("退還") || remarkStr.includes("取消預劃卡")) {
+                            displayContent = `<span style="color:#059669; font-weight:500;">↩️ 次卡退還 <span style="color:#666; font-weight:normal;">${remarkStr}</span></span>`;
+                        } else if (opStr.includes("扣") || remarkStr.includes("使用")) {
+                            let cleanRemark = remarkStr.replace(/^\[?使用次卡[:：]?\s*/i, "").trim();
+                           displayContent = `<span style="color:#dc2626; font-weight:500;">⚡ 使用次卡 <span style="color:#666; font-weight:normal;">${cleanRemark}</span></span>`;
+                        } else {
+                            const colorStyle = changeVal > 0 ? '#059669' : '#dc2626';
+                            displayContent = `<span>${opStr} <strong style="color:${colorStyle}">${changeVal > 0 ? '+' + changeVal : changeVal}次</strong></span> <span style="color:#666; font-size:12px;">${remarkStr}</span>`;
+                        }
 
                             historyHtml += `
                                 <div style="padding: 6px 0; border-bottom: 1px solid #f3f4f6; font-size: 13px;">
