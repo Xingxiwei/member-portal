@@ -193,7 +193,7 @@
                             return timeB - timeA;
                         });
 
-                        const recentHistory = sortedHistory.slice(0, 30);
+                        const recentHistory = sortedHistory.slice(0, 3);
                         
                         historyHtml = `
                             <div class="history-box">
@@ -288,7 +288,7 @@
             resultArea.innerHTML = `
                 <h3 style="margin-top:0; color:#1f2937; text-align:center;">👤 ${currentMemberData.name || '尊貴會員'}</h3>
                 <div class="info-row"><span>分店名稱：</span><strong>${currentMemberData.shopName}</strong></div>
-                <div class="info-row"><span>帳戶餘額：</span><strong style="color: #059669; font-size: 18px;">¥${currentMemberData.balance || 0}</strong></div>
+                <div class="info-row"><span>帳戶餘額：</span><strong style="color: #059669; font-size: 18px;">¥${Number(currentMemberData.balance || 0).toFixed(2)}</strong></div>
                 <div class="info-row"><span>會員等級：</span><span>${currentMemberData.level || '普通會員'}</span></div>
                 <hr style="border:0; border-top:1px solid #e5e7eb; margin: 15px 0;">
                 
