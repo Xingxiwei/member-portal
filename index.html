@@ -200,14 +200,21 @@
                                 // 1. 扣次記錄
                                 displayContent = `<span style="color:#333;">${remarkStr}</span>`;
                             } else if (opStr.includes("退") || remarkStr.includes("退卡")) {
-                                // 2. 退卡記錄
+                                // 2. 退卡記錄：提取退款金額、方式及原因編號
                                 const payMethodMatch = remarkStr.match(/方式[:：]?\s*([^\,\s\]]+)/);
                                 const payMethod = payMethodMatch ? payMethodMatch[1] : "現金";
                                 const absChange = Math.abs(changeVal);
+                                
+                                // 提取退款金額（支援 退款:100 或 金額:100）
+                                const refundMatch = remarkStr.match(/(?:退款|金額)[:：]?\s*([^\,\s\]]+)/);
+                                const refundAmount = refundMatch ? refundMatch[1] : "";
+                                const refundStr = refundAmount ? `, 退款:¥${refundAmount}` : "";
+                                
+                                // 提取退卡原因號碼（如結尾的 (1)）
                                 const reasonMatch = remarkStr.match(/\((\d+)\)\s*$/);
                                 const reasonNum = reasonMatch ? `(${reasonMatch[1]})` : "";
                                 
-                                displayContent = `<span style="color:#333; font-weight:500;">辦理退卡 ${absChange}次 <span style="color:#666; font-weight:normal;">[方式:${payMethod}]</span> ${reasonNum}</span>`;
+                                displayContent = `<span style="color:#333; font-weight:500;">辦理退卡 ${absChange}次 <span style="color:#666; font-weight:normal;">[方式:${payMethod}${refundStr}]</span> ${reasonNum}</span>`;
                             } else if (opStr.includes("買") || remarkStr.includes("購買") || remarkStr.includes("次卡購買")) {
                                 // 3. 購買次卡記錄：精簡化，洗走重覆字眼，提取金額同方式
                                 const amountMatch = remarkStr.match(/金額[:：]?\s*([^\,\s\]]+)/);
