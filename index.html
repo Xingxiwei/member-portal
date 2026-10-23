@@ -45,8 +45,14 @@
         const LEGACY_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93Y2d1d2R4bW92cGF0eWtpaG55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1MDAxMTMsImV4cCI6MjEwMjA3NjExM30.ICq8Q0LUdd-W0ZdGiiSlmRwgQd-uuGRO07_L-Vrl6dQ"; 
         const NEW_PUBLISHABLE_KEY = "sb_publishable_f2V-7tru25_ZKjqq1KE09A_p_CYvKda";
 
+        // 🛡️ 智能容錯：同時支援 shop、machine_id、帶空格嘅 machine id
         const urlParams = new URLSearchParams(window.location.search);
-        const targetShop = urlParams.get('shop') || urlParams.get('machine_id') || "";
+        const rawSearchStr = window.location.search;
+        let targetShop = urlParams.get('shop') || urlParams.get('machine_id') || "";
+        if (!targetShop && rawSearchStr) {
+            const match = rawSearchStr.match(/machine[\s_id]*=([^&]+)/i);
+            if (match) targetShop = decodeURIComponent(match[1]);
+        }
 
         let currentMemberData = null; 
 
@@ -69,7 +75,7 @@
             }
         }
 
-        // 🛡️ 時間解析工具：防範 iOS / Safari 對非標準日期字串回傳 NaN
+        // 🛡️ 時間解析工具
         function parseLogTimestamp(timeStr) {
             if (!timeStr) return 0;
             if (typeof timeStr === 'number') return timeStr;
@@ -224,7 +230,7 @@
                                 
                                 let cleanRemark = parts.join(", ");
                                 displayContent = `<span style="color:#d97706; font-weight:500;">⚠️ 辦理退卡 <span style="color:#666; font-weight:normal;">${cleanRemark}</span></span>`;
-                            } else if (opStr.includes("次卡購買") || opStr.includes("購買次卡") || remarkStr.includes("購買次卡")) {
+                            } else if (opStr.includes("次卡購買") || remarkStr.includes("購買次卡") || remarkStr.includes("購買次卡")) {
                                 let countMatch = remarkStr.match(/([+\-]?\d+)\s*次/);
                                 let buyCount = countMatch ? Math.abs(Number(countMatch[1])) : Math.abs(Number(changeVal) || 1);
                                 
