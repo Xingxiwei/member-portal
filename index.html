@@ -193,7 +193,9 @@
                             let displayContent = "";
                             
                             if (remarkStr.includes("桌號") || remarkStr.includes("使用次卡") || remarkStr.includes("扣除")) {
-                                displayContent = `<span style="color:#333;">${remarkStr}</span>`;
+                                // 1. 扣次記錄：在前面統一加上「使用次卡」
+                                let cleanRemark = remarkStr.replace(/^\[?使用次卡[:：]?\s*/i, "").trim();
+                                displayContent = `<span style="color:#333; font-weight:500;">使用次卡 <span style="color:#666; font-weight:normal;">${cleanRemark}</span></span>`;
                             } else if (opStr.includes("退") || remarkStr.includes("退卡")) {
                                 const payMethodMatch = remarkStr.match(/方式[:：]?\s*([^\,\s\]]+)/);
                                 const payMethod = payMethodMatch ? payMethodMatch[1] : "現金";
