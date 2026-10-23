@@ -197,21 +197,28 @@
                             let displayContent = "";
                             
                             if (remarkStr.includes("桌號") || remarkStr.includes("使用次卡") || remarkStr.includes("扣除")) {
-                                // 1. 扣次記錄：直接顯示乾淨備註
+                                // 1. 扣次記錄
                                 displayContent = `<span style="color:#333;">${remarkStr}</span>`;
                             } else if (opStr.includes("退") || remarkStr.includes("退卡")) {
-                                // 2. 退卡記錄：保留退卡原因編號（如 (1)）
+                                // 2. 退卡記錄
                                 const payMethodMatch = remarkStr.match(/方式[:：]?\s*([^\,\s\]]+)/);
                                 const payMethod = payMethodMatch ? payMethodMatch[1] : "現金";
                                 const absChange = Math.abs(changeVal);
-                                
-                                // 提取退卡原因括號（例如原本結尾嘅 (1)）
                                 const reasonMatch = remarkStr.match(/\((\d+)\)\s*$/);
                                 const reasonNum = reasonMatch ? `(${reasonMatch[1]})` : "";
                                 
                                 displayContent = `<span style="color:#333; font-weight:500;">辦理退卡 ${absChange}次 <span style="color:#666; font-weight:normal;">[方式:${payMethod}]</span> ${reasonNum}</span>`;
+                            } else if (opStr.includes("買") || remarkStr.includes("購買") || remarkStr.includes("次卡購買")) {
+                                // 3. 購買次卡記錄：精簡化，洗走重覆字眼，提取金額同方式
+                                const amountMatch = remarkStr.match(/金額[:：]?\s*([^\,\s\]]+)/);
+                                const payMethodMatch = remarkStr.match(/方式[:：]?\s*([^\,\s\]]+)/);
+                                
+                                const amount = amountMatch ? amountMatch[1] : "0";
+                                const payMethod = payMethodMatch ? payMethodMatch[1] : "現金";
+                                
+                                displayContent = `<span style="color:#333; font-weight:500;">購買次卡 <strong style="color:#059669;">+${changeVal}次</strong> <span style="color:#666; font-weight:normal;">[金額:${amount}, 方式:${payMethod}]</span></span>`;
                             } else {
-                                // 3. 其他類型（如購買）顯示標準格式
+                                // 4. 其他預設格式
                                 const colorStyle = changeVal > 0 ? '#059669' : '#dc2626';
                                 displayContent = `<span>${opStr} <strong style="color:${colorStyle}">${changeVal > 0 ? '+' + changeVal : changeVal}次</strong></span> <span style="color:#666; font-size:12px;">${remarkStr}</span>`;
                             }
