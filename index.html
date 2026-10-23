@@ -206,13 +206,13 @@
                             let displayContent = "";
                             
                             // 🎯 核心修復 2：優先攔截「退卡 / 返還 / 取消預劃卡」，防止被「桌號」誤判為使用次卡
-                            if (opStr.includes("退") || remarkStr.includes("退卡") || remarkStr.includes("返還") || remarkStr.includes("取消預劃卡")) {
-                                displayContent = `<span style="color:#059669; font-weight:500;">↩️ 次卡退還 <span style="color:#666; font-weight:normal;">${remarkStr}</span></span>`;
-                            } else if (remarkStr.includes("桌號") || remarkStr.includes("使用次卡") || remarkStr.includes("扣除") || opStr.includes("扣")) {
+                            if (opStr.includes("退") || opStr.includes("辦理退卡") || remarkStr.includes("退卡") || remarkStr.includes("返還") || remarkStr.includes("取消預劃卡")) {
+                                displayContent = `<span style="color:#d97706; font-weight:500;">⚠️ 辦理退卡 <span style="color:#666; font-weight:normal;">${remarkStr}</span></span>`;
+                            } else if (opStr.includes("買") || remarkStr.includes("購買") || remarkStr.includes("購")) {
+                                displayContent = `<span style="color:#4f46e5; font-weight:500;">🛒 購買次卡 <span style="color:#666; font-weight:normal;">${remarkStr}</span></span>`;
+                            } else if (opStr.includes("扣") || remarkStr.includes("使用") || remarkStr.includes("桌號") || remarkStr.includes("扣除")) {
                                 let cleanRemark = remarkStr.replace(/^\[?使用次卡[:：]?\s*/i, "").trim();
                                 displayContent = `<span style="color:#dc2626; font-weight:500;">⚡ 使用次卡 <span style="color:#666; font-weight:normal;">${cleanRemark}</span></span>`;
-                            } else if (opStr.includes("買") || remarkStr.includes("購買")) {
-                                displayContent = `<span style="color:#4f46e5; font-weight:500;">🛒 購買次卡 <span style="color:#666; font-weight:normal;">${remarkStr}</span></span>`;
                             } else {
                                 const colorStyle = changeVal > 0 ? '#059669' : '#dc2626';
                                 displayContent = `<span>${opStr} <strong style="color:${colorStyle}">${changeVal > 0 ? '+' + changeVal : changeVal}次</strong></span> <span style="color:#666; font-size:12px;">${remarkStr}</span>`;
