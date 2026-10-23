@@ -205,14 +205,15 @@
 
                             let displayContent = "";
                             
-                            // 🎯 核心修復 2：優先使用次卡
-                            if (opStr.includes("辦理退卡")) {
-                                displayContent = `<span style="color:#d97706; font-weight:500;">⚠️ 辦理退卡 <span style="color:#666; font-weight:normal;">${remarkStr}</span></span>`;
-                            } else if (opStr.includes("次卡購買") || opStr.includes("購買次卡")) {
+                            // 🎯 核心修復 2：次卡操作分析
+                            if (opStr.includes("辦理退卡") || remarkStr.includes("辦理退卡")) {
+                                let cleanRemark = remarkStr.replace(/^辦理退卡\s*-\d+次\s*/i, "").trim();
+                                displayContent = `<span style="color:#d97706; font-weight:500;">⚠️ 辦理退卡 <span style="color:#666; font-weight:normal;">${cleanRemark}</span></span>`;
+                            } else if (opStr.includes("次卡購買") || opStr.includes("購買次卡") || remarkStr.includes("購買次卡")) {
                                 displayContent = `<span style="color:#4f46e5; font-weight:500;">🛒 購買次卡 <span style="color:#666; font-weight:normal;">${remarkStr}</span></span>`;
-                            } else if (opStr.includes("次卡退還")) {
+                            } else if (opStr.includes("次卡退還") || remarkStr.includes("退還") || remarkStr.includes("取消預劃卡")) {
                                 displayContent = `<span style="color:#059669; font-weight:500;">↩️ 次卡退還 <span style="color:#666; font-weight:normal;">${remarkStr}</span></span>`;
-                            } else if (opStr.includes("扣") ) {
+                            } else if (opStr.includes("扣") || remarkStr.includes("使用")) {
                                 let cleanRemark = remarkStr.replace(/^\[?使用次卡[:：]?\s*/i, "").trim();
                                 displayContent = `<span style="color:#dc2626; font-weight:500;">⚡ 使用次卡 <span style="color:#666; font-weight:normal;">${cleanRemark}</span></span>`;
                             } else {
