@@ -212,7 +212,7 @@
                                 displayContent = `<span style="color:#4f46e5; font-weight:500;">🛒 購買次卡 <span style="color:#666; font-weight:normal;">${remarkStr}</span></span>`;
                             } else if (opStr.includes("次卡退還")) {
                                 displayContent = `<span style="color:#059669; font-weight:500;">↩️ 次卡退還 <span style="color:#666; font-weight:normal;">${remarkStr}</span></span>`;
-                            } else if (opStr.includes("扣") || remarkStr.includes("使用") || remarkStr.includes("桌號") || remarkStr.includes("扣除")) {
+                            } else if (opStr.includes("扣") ) {
                                 let cleanRemark = remarkStr.replace(/^\[?使用次卡[:：]?\s*/i, "").trim();
                                 displayContent = `<span style="color:#dc2626; font-weight:500;">⚡ 使用次卡 <span style="color:#666; font-weight:normal;">${cleanRemark}</span></span>`;
                             } else {
