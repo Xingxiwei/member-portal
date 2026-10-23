@@ -176,8 +176,15 @@
                     
                     let historyHtml = "";
                     if (p.history && Array.isArray(p.history) && p.history.length > 0) {
-                        // 只取最近 3 次記錄，省資源
-                        const recentHistory = p.history.slice(0, 3);
+                        // 🎯 複製一份並按時間由新到舊（降序）排序，確保最新嘅永遠排喺最頂
+                        const sortedHistory = [...p.history].sort((a, b) => {
+                            const timeA = new Date(a.time || a.date || 0).getTime();
+                            const timeB = new Date(b.time || b.date || 0).getTime();
+                            return timeB - timeA;
+                        });
+                    
+                        // 只取最近 3 次記錄
+                        const recentHistory = sortedHistory.slice(0, 3);
                         
                         historyHtml = `<div class="history-box"><div class="history-title">📜 專屬歷程（最近3次）</div>`;
                         recentHistory.forEach(h => {
