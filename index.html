@@ -11,12 +11,19 @@
         .shop-tag { text-align: center; font-size: 15px; font-weight: bold; color: #4f46e5; margin-bottom: 20px; background: #e0e7ff; padding: 8px; border-radius: 6px; }
         .form-group { margin-bottom: 16px; }
         label { display: block; margin-bottom: 6px; font-weight: 500; }
-        input { width: 100%; padding: 12px; box-sizing: border-box; border: 1px solid #d1d5db; border-radius: 8px; font-size: 16px; }
+        input, select { width: 100%; padding: 12px; box-sizing: border-box; border: 1px solid #d1d5db; border-radius: 8px; font-size: 16px; background: #fff; }
         button { width: 100%; padding: 12px; background: #4f46e5; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         button:hover { background: #4338ca; }
         .result-box { margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 16px; }
-        .card-item { background: #f9fafb; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #4f46e5; }
-        .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 15px; }
+        .card-item { background: #f9fafb; padding: 14px; border-radius: 8px; margin-bottom: 12px; border-left: 4px solid #4f46e5; border: 1px solid #e5e7eb; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 15px; align-items: center; }
+        .history-box { margin-top: 10px; background: #fff; padding: 8px 12px; border-radius: 6px; border: 1px dashed #d1d5db; font-size: 13px; }
+        .history-title { font-weight: bold; color: #4f46e5; margin-bottom: 4px; font-size: 13px; }
+        .history-item { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3f4f6; color: #555; }
+        .history-item:last-child { border-bottom: none; }
+        .filter-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .filter-container label { margin-bottom: 0; font-size: 14px; color: #555; }
+        .filter-container select { width: auto; padding: 6px 12px; font-size: 14px; }
         .error { color: #dc2626; text-align: center; margin-top: 15px; font-weight: 500; }
     </style>
 </head>
@@ -37,18 +44,16 @@
 
     <script>
         const SUPABASE_URL = "https://owcguwdxmovpatykihny.supabase.co";
-        
-        // 🔑 同時定義兩組 Key，實現自動備援機制
         const LEGACY_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93Y2d1d2R4bW92cGF0eWtpaG55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1MDAxMTMsImV4cCI6MjEwMjA3NjExM30.ICq8Q0LUdd-W0ZdGiiSlmRwgQd-uuGRO07_L-Vrl6dQ"; 
         const NEW_PUBLISHABLE_KEY = "sb_publishable_f2V-7tru25_ZKjqq1KE09A_p_CYvKda";
 
         const urlParams = new URLSearchParams(window.location.search);
         const targetShop = urlParams.get('shop') || urlParams.get('machine_id') || "";
 
-        // 智能封裝 fetch 請求：優先用 Legacy Key，如果 401 失敗則自動切換成新版 Publishable Key 重試
+        let currentMemberData = null; // 全局暫存當前查詢到的會員資料，便於切換篩選
+
         async function fetchWithFallback(endpoint) {
             const keysToTry = [LEGACY_KEY, NEW_PUBLISHABLE_KEY];
-            
             for (let i = 0; i < keysToTry.length; i++) {
                 const apiKey = keysToTry[i];
                 try {
@@ -58,13 +63,7 @@
                             "Authorization": `Bearer ${apiKey}`
                         }
                     });
-
-                    // 如果遇到 401（未授權/Key失效），且還有備用 Key，就進入下一次迴圈換新 Key 試
-                    if (res.status === 401 && i < keysToTry.length - 1) {
-                        console.warn("當前 API Key 驗證失敗，自動切換至備用 Key 重試...");
-                        continue;
-                    }
-
+                    if (res.status === 401 && i < keysToTry.length - 1) continue;
                     return res;
                 } catch (err) {
                     if (i === keysToTry.length - 1) throw err;
@@ -72,25 +71,18 @@
             }
         }
 
-        // 頁面載入時自動取得正確的店舖名字
         window.onload = async function() {
             const shopTag = document.getElementById("shopTag");
             if (!targetShop) {
                 shopTag.innerText = `📍 全店通用查詢`;
                 return;
             }
-
             try {
                 const res = await fetchWithFallback(`/rest/v1/member_clouds?select=machine_id,shop_name`);
-
                 if (res && res.ok) {
                     const rows = await res.json();
                     const matched = rows.find(r => r.machine_id === targetShop);
-                    if (matched && matched.shop_name) {
-                        shopTag.innerText = `📍 ${matched.shop_name}`;
-                    } else {
-                        shopTag.innerText = `📍 分店: ${targetShop}`;
-                    }
+                    shopTag.innerText = matched && matched.shop_name ? `📍 ${matched.shop_name}` : `📍 分店: ${targetShop}`;
                 } else {
                     shopTag.innerText = `📍 分店: ${targetShop}`;
                 }
@@ -118,7 +110,6 @@
 
             try {
                 const res = await fetchWithFallback(`/rest/v1/member_clouds?select=machine_id,shop_name,phone,member_detailed_data`);
-
                 if (!res || !res.ok) throw new Error("網絡請求失敗");
 
                 const rows = await res.json();
@@ -127,7 +118,6 @@
 
                 for (let row of rows) {
                     const matchShop = !targetShop || row.machine_id === targetShop || row.shop_name === targetShop;
-                    
                     if (matchShop) {
                         if (row.shop_name) {
                             shopName = row.shop_name;
@@ -137,6 +127,7 @@
                             const match = row.member_detailed_data.find(m => m.phone === phone);
                             if (match) {
                                 foundMember = match;
+                                foundMember.shopName = shopName;
                                 break;
                             }
                         }
@@ -149,35 +140,87 @@
                 }
 
                 errorArea.innerText = "";
-                
-                let passesHtml = "";
-                if (foundMember.passes && foundMember.passes.length > 0) {
-                    passesHtml = "<h4>🎫 次卡剩餘情況：</h4>";
-                    foundMember.passes.forEach(p => {
-                        passesHtml += `
-                            <div class="card-item">
-                                <div class="info-row"><b>${p.card_name || '次卡'}</b><span>剩餘: <strong style="color:#4f46e5;">${p.remain_count || 0}</strong> / 總数: ${p.total_count || 0}</span></div>
-                            </div>
-                        `;
-                    });
-                } else {
-                    passesHtml = "<p style='color: #666; text-align: center;'>暫無次卡記錄</p>";
-                }
-
-                resultArea.style.display = "block";
-                resultArea.innerHTML = `
-                    <h3 style="margin-top:0; color:#1f2937; text-align:center;">👤 ${foundMember.name || '尊貴會員'}</h3>
-                    <div class="info-row"><span>分店名稱：</span><strong>${shopName}</strong></div>
-                    <div class="info-row"><span>帳戶餘額：</span><strong style="color: #059669; font-size: 18px;">¥${foundMember.balance || 0}</strong></div>
-                    <div class="info-row"><span>會員等級：</span><span>${foundMember.level || '普通會員'}</span></div>
-                    <hr style="border:0; border-top:1px solid #e5e7eb; margin: 15px 0;">
-                    ${passesHtml}
-                `;
+                currentMemberData = foundMember; // 儲存起來供篩選使用
+                renderMemberResult();
 
             } catch (err) {
                 console.error(err);
                 errorArea.innerText = "❌ 查詢出錯，請稍後重試。";
             }
+        }
+
+        function renderMemberResult() {
+            if (!currentMemberData) return;
+            const resultArea = document.getElementById("resultArea");
+            const filterVal = document.getElementById("passFilter") ? document.getElementById("passFilter").value : "all";
+
+            let passes = currentMemberData.passes || [];
+            let totalCountAll = passes.length;
+
+            // 狀態過濾邏輯
+            let filteredPasses = passes.filter(p => {
+                const remain = Number(p.remain_count ?? 0);
+                if (filterVal === "normal") return remain > 0;
+                if (filterVal === "zero") return remain === 0;
+                return true;
+            });
+
+            let passesHtml = "";
+            if (filteredPasses.length > 0) {
+                filteredPasses.forEach(p => {
+                    const remain = p.remain_count ?? 0;
+                    const total = p.total_count ?? p.initial_count ?? p.total ?? remain; // 自動適配總數欄位
+                    
+                    // 渲染該張卡的消費歷程
+                    let historyHtml = "";
+                    if (p.history && Array.isArray(p.history) && p.history.length > 0) {
+                        historyHtml = `<div class="history-box"><div class="history-title">📜 專屬歷程記錄：</div>`;
+                        p.history.forEach(h => {
+                            historyHtml += `
+                                <div class="history-item">
+                                    <span>${h.time || ''} | ${h.operation || h.type || '異動'} (${h.change > 0 ? '+' + h.change : h.change}次)</span>
+                                    <span style="color:#666; font-size:12px;">${h.remark || ''}</span>
+                                </div>
+                            `;
+                        });
+                        historyHtml += `</div>`;
+                    } else {
+                        historyHtml = `<div class="history-box"><div class="history-title">📜 專屬歷程記錄：</div><div style="color:#888; font-size:13px; text-align:center; padding: 4px;">暫無歷程記錄</div></div>`;
+                    }
+
+                    passesHtml += `
+                        <div class="card-item">
+                            <div class="info-row">
+                                <b>${p.card_name || '次卡項目'}</b>
+                                <span>剩餘: <strong style="color:#4f46e5;">${remain}</strong> / 總數: ${total}</span>
+                            </div>
+                            <div style="font-size: 12px; color: #666; margin-bottom: 6px;">ID: ${p.id || p.card_id || 'N/A'}</div>
+                            ${historyHtml}
+                        </div>
+                    `;
+                });
+            } else {
+                passesHtml = "<p style='color: #666; text-align: center; padding: 10px;'>暫無符合條件的次卡記錄</p>";
+            }
+
+            resultArea.style.display = "block";
+            resultArea.innerHTML = `
+                <h3 style="margin-top:0; color:#1f2937; text-align:center;">👤 ${currentMemberData.name || '尊貴會員'}</h3>
+                <div class="info-row"><span>分店名稱：</span><strong>${currentMemberData.shopName}</strong></div>
+                <div class="info-row"><span>帳戶餘額：</span><strong style="color: #059669; font-size: 18px;">¥${currentMemberData.balance || 0}</strong></div>
+                <div class="info-row"><span>會員等級：</span><span>${currentMemberData.level || '普通會員'}</span></div>
+                <hr style="border:0; border-top:1px solid #e5e7eb; margin: 15px 0;">
+                
+                <div class="filter-container">
+                    <label><b>🎫 持有次卡列表：</b></label>
+                    <select id="passFilter" onchange="renderMemberResult()">
+                        <option value="all" ${filterVal === 'all' ? 'selected' : ''}>全部狀態 (${passes.length})</option>
+                        <option value="normal" ${filterVal === 'normal' ? 'selected' : ''}>正常 (剩餘 > 0)</option>
+                        <option value="zero" ${filterVal === 'zero' ? 'selected' : ''}>已用完/歸零 (0 次)</option>
+                    </select>
+                </div>
+                ${passesHtml}
+            `;
         }
     </script>
 </body>
