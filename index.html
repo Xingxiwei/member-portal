@@ -208,7 +208,7 @@
                             // 🎯 核心修復 2：優先攔截「退卡 / 返還 / 取消預劃卡」，防止被「桌號」誤判為使用次卡
                             if (opStr.includes("辦理退卡")) {
                                 displayContent = `<span style="color:#d97706; font-weight:500;">⚠️ 辦理退卡 <span style="color:#666; font-weight:normal;">${remarkStr}</span></span>`;
-                            } else if (opStr.includes("次卡購買"){
+                            } else if (opStr.includes("次卡購買")){
                                 displayContent = `<span style="color:#4f46e5; font-weight:500;">🛒 購買次卡 <span style="color:#666; font-weight:normal;">${remarkStr}</span></span>`;
                             } else if (opStr.includes("扣") || remarkStr.includes("使用") || remarkStr.includes("桌號") || remarkStr.includes("扣除")) {
                                 let cleanRemark = remarkStr.replace(/^\[?使用次卡[:：]?\s*/i, "").trim();
