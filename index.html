@@ -18,7 +18,7 @@
         .card-item { background: #f9fafb; padding: 14px; border-radius: 8px; margin-bottom: 12px; border-left: 4px solid #4f46e5; border: 1px solid #e5e7eb; }
         .info-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 15px; align-items: center; }
         .history-box { margin-top: 10px; background: #fff; padding: 8px 12px; border-radius: 6px; border: 1px dashed #d1d5db; font-size: 13px; }
-        .history-title { font-weight: bold; color: #4f46e5; margin-bottom: 4px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+        .history-title { font-weight: bold; color: #4f46e5; margin-bottom: 4px; font-size: 13px; }
         .history-item { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3f4f6; color: #555; }
         .history-item:last-child { border-bottom: none; }
         .filter-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
@@ -44,7 +44,6 @@
 
     <script>
         const SUPABASE_URL = "https://owcguwdxmovpatykihny.supabase.co";
-        // ⚡ 修正正確、無斷行嘅 Legacy Anon Key
         const LEGACY_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93Y2d1d2R4bW92cGF0eWtpaG55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1MDAxMTMsImV4cCI6MjEwMjA3NjExM30.ICq8Q0LUdd-W0ZdGiiSlmRwgQd-uuGRO07_L-Vrl6dQ"; 
         const NEW_PUBLISHABLE_KEY = "sb_publishable_f2V-7tru25_ZKjqq1KE09A_p_CYvKda";
 
@@ -172,19 +171,21 @@
             if (filteredPasses.length > 0) {
                 filteredPasses.forEach(p => {
                     const remain = p.remain_count ?? 0;
-                    const cardId = p.id || p.card_id || p.pass_id || 'N/A';
+                    // 精準對齊收銀端嘅 id 欄位
+                    const cardId = p.id || p.card_id || 'N/A';
                     
                     let historyHtml = "";
                     if (p.history && Array.isArray(p.history) && p.history.length > 0) {
-                        const recentHistory = p.history.slice(0, 3); // ⚡ 只取最近 3 次
+                        // 只取最近 3 次記錄，省資源
+                        const recentHistory = p.history.slice(0, 3);
                         
-                        historyHtml = `<div class="history-box"><div class="history-title"><span>📜 專屬歷程（最近3次）</span></div>`;
+                        historyHtml = `<div class="history-box"><div class="history-title">📜 專屬歷程（最近3次）</div>`;
                         recentHistory.forEach(h => {
                             const changeVal = h.change !== undefined ? h.change : (h.count || 0);
                             historyHtml += `
                                 <div class="history-item">
-                                    <span>${h.time || ''} | ${h.operation || h.type || '異動'} (<strong style="color:${changeVal > 0 ? '#059669' : '#dc2626'}">${changeVal > 0 ? '+' + changeVal : changeVal}次</strong>)</span>
-                                    <span style="color:#666; font-size:12px;">${h.remark || ''}</span>
+                                    <span>${h.time || h.date || ''} | ${h.operation || h.type || '異動'} (<strong style="color:${changeVal > 0 ? '#059669' : '#dc2626'}">${changeVal > 0 ? '+' + changeVal : changeVal}次</strong>)</span>
+                                    <span style="color:#666; font-size:12px;">${h.remark || h.note || ''}</span>
                                 </div>
                             `;
                         });
@@ -196,7 +197,7 @@
                     passesHtml += `
                         <div class="card-item">
                             <div class="info-row">
-                                <b>${p.card_name || '次卡項目'}</b>
+                                <b>${p.card_name || p.packageName || '次卡項目'}</b>
                                 <span>剩餘: <strong style="color:#4f46e5;">${remain} 次</strong></span>
                             </div>
                             <div style="font-size: 12px; color: #666; margin-bottom: 6px;">ID: ${cardId}</div>
