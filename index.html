@@ -188,11 +188,27 @@
                         
                         historyHtml = `<div class="history-box"><div class="history-title">📜 專屬歷程（最近3次）</div>`;
                         recentHistory.forEach(h => {
+                            const timeStr = h.time || h.date || '';
+                            const remarkStr = h.remark || h.note || '';
+                            const opStr = h.operation || h.type || '異動';
                             const changeVal = h.change !== undefined ? h.change : (h.count || 0);
+
+                            // 🎯 智慧精簡顯示邏輯
+                            let displayContent = "";
+                            if (remarkStr.includes("桌號") || remarkStr.includes("使用次卡") || remarkStr.includes("扣除")) {
+                                // 如果係扣次記錄，直接顯示乾淨嘅備註（如 [桌號 A2] 使用次卡: 扣除 1 次），唔重複顯示 operation
+                                displayContent = `<span style="color:#333;">${remarkStr}</span>`;
+                            } else {
+                                // 其他類型（如退卡、購買）顯示標準格式
+                                const colorStyle = changeVal > 0 ? '#059669' : '#dc2626';
+                                displayContent = `<span>${opStr} <strong style="color:${colorStyle}">${changeVal > 0 ? '+' + changeVal : changeVal}次</strong></span> <span style="color:#666; font-size:12px;">${remarkStr}</span>`;
+                            }
+
+                            // 🎯 改用上下分行或區塊排版，徹底解決文字左右擠壓重疊嘅問題
                             historyHtml += `
-                                <div class="history-item">
-                                    <span>${h.time || h.date || ''} | ${h.operation || h.type || '異動'} (<strong style="color:${changeVal > 0 ? '#059669' : '#dc2626'}">${changeVal > 0 ? '+' + changeVal : changeVal}次</strong>)</span>
-                                    <span style="color:#666; font-size:12px;">${h.remark || h.note || ''}</span>
+                                <div style="padding: 6px 0; border-bottom: 1px solid #f3f4f6; font-size: 13px;">
+                                    <div style="color: #6b7280; font-family: monospace; margin-bottom: 2px;">🕒 ${timeStr}</div>
+                                    <div>${displayContent}</div>
                                 </div>
                             `;
                         });
