@@ -216,7 +216,7 @@
                                 const amount = amountMatch ? amountMatch[1] : "0";
                                 const payMethod = payMethodMatch ? payMethodMatch[1] : "現金";
                                 
-                                displayContent = `<span style="color:#333; font-weight:500;">購買次卡 <strong style="color:#059669;">+${changeVal}次</strong> <span style="color:#666; font-weight:normal;">[金額:${amount}, 方式:${payMethod}]</span></span>`;
+                                displayContent = `<span style="color:#333; font-weight:500;">購買次卡 </strong> <span style="color:#666; font-weight:normal;">[${changeVal}次 方式:${payMethod}金額:${amount}]</span></span>`;
                             } else {
                                 const colorStyle = changeVal > 0 ? '#059669' : '#dc2626';
                                 displayContent = `<span>${opStr} <strong style="color:${colorStyle}">${changeVal > 0 ? '+' + changeVal : changeVal}次</strong></span> <span style="color:#666; font-size:12px;">${remarkStr}</span>`;
