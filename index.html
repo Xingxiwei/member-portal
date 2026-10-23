@@ -228,7 +228,22 @@
                                 let cleanRemark = parts.join(", ");
                                 displayContent = `<span style="color:#d97706; font-weight:500;">⚠️ 辦理退卡 <span style="color:#666; font-weight:normal;">${cleanRemark}</span></span>`;
                             } else if (opStr.includes("次卡購買") || opStr.includes("購買次卡") || remarkStr.includes("購買次卡")) {
-                                displayContent = `<span style="color:#4f46e5; font-weight:500;">🛒 購買次卡 <span style="color:#666; font-weight:normal;">${remarkStr}</span></span>`;
+                                let buyCount = Math.abs(Number(changeVal) || 1);
+                                
+                                // 動態正則抓取金額、方式（完全不使用預設值，抓唔到就留空）
+                                let amountMatch = remarkStr.match(/金額[：:]\s*([0-9\.]+)/);
+                                let methodMatch = remarkStr.match(/方式[：:]\s*([^,\，\(\)\]\s]+)/);
+                            
+                                let amount = amountMatch ? amountMatch[1] : "";
+                                let method = methodMatch ? methodMatch[1].trim() : "";
+                            
+                                let parts = [];
+                                parts.push(`購買 ${buyCount} 次`);
+                                if (amount) parts.push(`金額:${amount}`);
+                                if (method) parts.push(`支付:${method}`);
+                            
+                                let cleanRemark = parts.join(", ");
+                                displayContent = `<span style="color:#4f46e5; font-weight:500;">🛒 購買次卡 <span style="color:#666; font-weight:normal;">${cleanRemark}</span></span>`;
                             } else if (opStr.includes("次卡退還") || remarkStr.includes("退還") || remarkStr.includes("取消預劃卡")) {
                                 displayContent = `<span style="color:#059669; font-weight:500;">↩️ 次卡退還 <span style="color:#666; font-weight:normal;">${remarkStr}</span></span>`;
                             } else if (opStr.includes("扣") || remarkStr.includes("使用")) {
