@@ -208,17 +208,13 @@
                             // 🎯 核心修復 2：次卡操作分析
                             if (opStr.includes("辦理退卡") || remarkStr.includes("辦理退卡")) {
                                 let refundCount = Math.abs(changeVal) || 1; 
-                                
-                                // 🛡️ 更強大、容錯率更高嘅提取方式（支援全角半角冒號、空格）
                                 let amountMatch = remarkStr.match(/退款[：:]\s*([0-9\.]+)/);
                                 let methodMatch = remarkStr.match(/方式[：:]\s*([^,\，\(\)\]]+)/);
                                 let reasonMatch = remarkStr.match(/\(([^)]+)\)\s*$/) || remarkStr.match(/原因[：:]\s*([^\s]+)/);
-                            
                                 // 如果抓唔到就嘗試去原始數據找，再唔係就畀預設值
-                                let amount = amountMatch ? amountMatch[1] : "12";
-                                let method = methodMatch ? methodMatch[1].trim() : "現金";
-                                let reason = reasonMatch ? reasonMatch[1].trim() : "vf";
-                            
+                                let amount = amountMatch ? amountMatch[1] : "";
+                                let method = methodMatch ? methodMatch[1].trim() : "";
+                                let reason = reasonMatch ? reasonMatch[1].trim() : "";
                                 let cleanRemark = `退還 ${refundCount} 次, 退款:${amount}, 方式:${method}，原因:${reason}`;
                                 displayContent = `<span style="color:#d97706; font-weight:500;">⚠️ 辦理退卡 <span style="color:#666; font-weight:normal;">${cleanRemark}</span></span>`;
                             } else if (opStr.includes("次卡購買") || opStr.includes("購買次卡") || remarkStr.includes("購買次卡")) {
