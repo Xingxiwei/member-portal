@@ -206,7 +206,7 @@
                             let displayContent = "";
                             
                             // 🎯 核心修復 2：優先攔截「退卡 / 返還 / 取消預劃卡」，防止被「桌號」誤判為使用次卡
-                            if (opStr.includes("退") || opStr.includes("辦理退卡") || remarkStr.includes("退卡") || remarkStr.includes("返還") || remarkStr.includes("取消預劃卡")) {
+                            if (opStr.includes("辦理退卡")) {
                                 displayContent = `<span style="color:#d97706; font-weight:500;">⚠️ 辦理退卡 <span style="color:#666; font-weight:normal;">${remarkStr}</span></span>`;
                             } else if (opStr.includes("買") || remarkStr.includes("購買") || remarkStr.includes("購")) {
                                 displayContent = `<span style="color:#4f46e5; font-weight:500;">🛒 購買次卡 <span style="color:#666; font-weight:normal;">${remarkStr}</span></span>`;
