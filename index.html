@@ -203,10 +203,10 @@
                                 
                                 const refundMatch = remarkStr.match(/(?:退款|金額)[:：]?\s*([^\,\s\]]+)/);
                                 const refundAmount = refundMatch ? refundMatch[1] : "";
-                                const refundStr = refundAmount ? `, 退款:¥${refundAmount}` : "";
+                                const refundStr = refundAmount ? `, 退款:${refundAmount}` : "";
                                 
                                 const reasonMatch = remarkStr.match(/\((\d+)\)\s*$/);
-                                const reasonNum = reasonMatch ? `(${reasonMatch[1]})` : "";
+                                const reasonNum = reasonMatch ? `(原因:${reasonMatch[1]})` : "";
                                 
                                 displayContent = `<span style="color:#333; font-weight:500;">辦理退卡<span style="color:#666; font-weight:normal;">[${absChange}次 方式:${payMethod}${refundStr}]${reasonNum}</span> </span>`;
                             } else if (opStr.includes("買") || remarkStr.includes("購買") || remarkStr.includes("次卡購買")) {
