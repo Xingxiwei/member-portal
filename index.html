@@ -60,10 +60,73 @@
                     const res = await fetch(`${SUPABASE_URL}${endpoint}`, {
                         headers: {
                             "apikey": apiKey,
-                            "Authorization": `Bearer ${apiKey}` } }); if (res.status === 401 && i < keysToTry.length - 1) continue; return res; } catch (err) { if (i === keysToTry.length - 1) throw err; } } }  window.onload = async function() { const shopTag = document.getElementById("shopTag"); if (!targetShop) { shopTag.innerText = `📍 全店通用查詢`; return; } try { const res = await fetchWithFallback(`/rest/v1/member_clouds?select=machine_id,shop_name`); if (res && res.ok) { const rows = await res.json(); const matched = rows.find(r => r.machine_id === targetShop); shopTag.innerText = matched && matched.shop_name ? `📍 ${matched.shop_name}` : `📍 分店: ${targetShop}`; } else { shopTag.innerText = `📍 分店: ${targetShop}`;
+                            "Authorization": `Bearer ${apiKey}`
+                        }
+                    });
+                    if (res.status === 401 && i < keysToTry.length - 1) continue;
+                    return res;
+                } catch (err) {
+                    if (i === keysToTry.length - 1) throw err;
+                }
+            }
+        }
+
+        // 頁面載入時自動取得正確的店舖名字
+        window.onload = async function() {
+            const shopTag = document.getElementById("shopTag");
+            if (!targetShop) {
+                shopTag.innerText = `📍 全店通用查詢`;
+                return;
+            }
+            try {
+                // 直接透過 URL 參數精準查詢該 machine_id 嘅分店名
+                const res = await fetchWithFallback(`/rest/v1/member_clouds?machine_id=eq.${targetShop}&select=shop_name`);
+                if (res && res.ok) {
+                    const rows = await res.json();
+                    if (rows && rows.length > 0 && rows[0].shop_name) {
+                        shopTag.innerText = `📍 ${rows[0].shop_name}`;
+                    } else {
+                        shopTag.innerText = `📍 分店: ${targetShop}`;
+                    }
+                } else {
+                    shopTag.innerText = `📍 分店: ${targetShop}`;
                 }
             } catch (err) {
-                shopTag.innerText = `📍 分店: ${targetShop}`; } };  async function queryMemberData() { const phone = document.getElementById("phoneInput").value.trim(); const resultArea = document.getElementById("resultArea"); const errorArea = document.getElementById("errorArea"); const shopTag = document.getElementById("shopTag");  resultArea.style.display = "none"; resultArea.innerHTML = ""; errorArea.innerHTML = "";  if (!phone) { errorArea.innerText = "請先輸入手機號碼！"; return; }  errorArea.innerText = "正在查詢中...";  try { const res = await fetchWithFallback(`/rest/v1/member_clouds?select=machine_id,shop_name,phone,member_detailed_data`); if (!res \vert{}\vert{} !res.ok) throw new Error("網絡請求失敗");  const rows = await res.json(); let foundMember = null; let shopName = "分店";  for (let row of rows) { const matchShop = !targetShop \vert{}\vert{} row.machine_id === targetShop \vert{}\vert{} row.shop_name === targetShop; if (matchShop) { if (row.shop_name) { shopName = row.shop_name; shopTag.innerText = `📍 ${shopName}`;
+                console.error(err);
+                shopTag.innerText = `📍 分店: ${targetShop}`;
+            }
+        };
+
+        async function queryMemberData() {
+            const phone = document.getElementById("phoneInput").value.trim();
+            const resultArea = document.getElementById("resultArea");
+            const errorArea = document.getElementById("errorArea");
+            const shopTag = document.getElementById("shopTag");
+            
+            resultArea.style.display = "none";
+            resultArea.innerHTML = "";
+            errorArea.innerHTML = "";
+
+            if (!phone) {
+                errorArea.innerText = "請先輸入手機號碼！";
+                return;
+            }
+
+            errorArea.innerText = "正在查詢中...";
+
+            try {
+                const res = await fetchWithFallback(`/rest/v1/member_clouds?select=machine_id,shop_name,phone,member_detailed_data`);
+                if (!res || !res.ok) throw new Error("網絡請求失敗");
+
+                const rows = await res.json();
+                let foundMember = null;
+                let shopName = "分店";
+
+                for (let row of rows) {
+                    const matchShop = !targetShop || row.machine_id === targetShop || row.shop_name === targetShop;
+                    if (matchShop) {
+                        if (row.shop_name) {
+                            shopName = row.shop_name;
                         }
                         if (row.member_detailed_data && Array.isArray(row.member_detailed_data)) {
                             const match = row.member_detailed_data.find(m => m.phone === phone);
@@ -117,7 +180,7 @@
                         p.history.forEach(h => {
                             historyHtml += `
                                 <div class="history-item">
-                                    <span>${h.time || ''} | ${h.operation \vert{}\vert{} h.type \vert{}\vert{} '異動'} (${h.change > 0 ? '+' + h.change : h.change}次)</span>
+                                    <span>${h.time || ''} | ${h.operation || h.type || '異動'} (${h.change > 0 ? '+' + h.change : h.change}次)</span>
                                     <span style="color:#666; font-size:12px;">${h.remark || ''}</span>
                                 </div>
                             `;
@@ -133,7 +196,8 @@
                                 <b>${p.card_name || '次卡項目'}</b>
                                 <span>剩餘: <strong style="color:#4f46e5;">${remain} 次</strong></span>
                             </div>
-                            <div style="font-size: 12px; color: #666; margin-bottom: 6px;">ID: ${p.id \vert{}\vert{} p.card_id \vert{}\vert{} 'N/A'}</div>${historyHtml}
+                            <div style="font-size: 12px; color: #666; margin-bottom: 6px;">ID: ${p.id || p.card_id || 'N/A'}</div>
+                            ${historyHtml}
                         </div>
                     `;
                 });
@@ -143,4 +207,23 @@
 
             resultArea.style.display = "block";
             resultArea.innerHTML = `
-                <h3
+                <h3 style="margin-top:0; color:#1f2937; text-align:center;">👤 ${currentMemberData.name || '尊貴會員'}</h3>
+                <div class="info-row"><span>分店名稱：</span><strong>${currentMemberData.shopName}</strong></div>
+                <div class="info-row"><span>帳戶餘額：</span><strong style="color: #059669; font-size: 18px;">¥${currentMemberData.balance || 0}</strong></div>
+                <div class="info-row"><span>會員等級：</span><span>${currentMemberData.level || '普通會員'}</span></div>
+                <hr style="border:0; border-top:1px solid #e5e7eb; margin: 15px 0;">
+                
+                <div class="filter-container">
+                    <label><b>🎫 持有次卡列表：</b></label>
+                    <select id="passFilter" onchange="renderMemberResult()">
+                        <option value="normal" ${filterVal === 'normal' ? 'selected' : ''}>正常 (剩餘 > 0)</option>
+                        <option value="zero" ${filterVal === 'zero' ? 'selected' : ''}>已用完/歸零 (0 次)</option>
+                        <option value="all" ${filterVal === 'all' ? 'selected' : ''}>全部狀態 (${passes.length})</option>
+                    </select>
+                </div>
+                ${passesHtml}
+            `;
+        }
+    </script>
+</body>
+</html>
